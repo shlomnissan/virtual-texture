@@ -77,6 +77,4 @@ auto ZoomPanCamera::Update() -> void {
 
 ZoomPanCamera::~ZoomPanCamera() {
     EventDispatcher::Get().RemoveEventListener("mouse_event", mouse_event_listener_);
-    mouse_event_listener_.reset();
-    camera_ = nullptr;
 }

@@ -67,14 +67,13 @@ auto main() -> int {
 
         page_shader.Use();
         page_shader.SetUniform("u_Projection", camera.projection);
-        page_shader.SetUniform("u_ModelView", camera.View());
+        page_shader.SetUniform("u_ModelView", camera.transform);
 
         geometry.Draw(page_shader);
     };
 
     window.Start([&]([[maybe_unused]] const double dt){
         controls.Update(static_cast<float>(dt));
-
         mainPass();
     });
 

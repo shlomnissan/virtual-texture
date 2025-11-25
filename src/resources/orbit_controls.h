@@ -16,6 +16,8 @@ public:
 
     explicit OrbitControls(PerspectiveCamera* camera);
 
+    ~OrbitControls();
+
     auto Update(float dt) -> void;
 
 private:
@@ -29,6 +31,5 @@ private:
     float scroll_offset_ {0.0f};
 
     bool do_orbit_ {false};
-    bool do_zoom_ {false};
     bool is_first_move_ {true};
 };
