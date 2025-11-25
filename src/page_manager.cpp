@@ -91,14 +91,11 @@ auto PageManager::GetVisiblePages() -> std::vector<Page*> {
     return visible_pages;
 }
 
-auto PageManager::Debug(const OrthographicCamera& camera) const -> void {
-    auto camera_scale = glm::length(glm::vec3 {camera.transform[0]});
-
+auto PageManager::Debug() const -> void {
     ImGui::SetNextWindowFocus();
     ImGui::Begin("Page Manager");
     ImGui::Text("Image size: %d", static_cast<int>(texture_size_.x));
     ImGui::Text("Current LOD: %d", curr_lod_);
-    ImGui::Text("Camera width: %.2f", camera.Width() * camera_scale);
 
     ImGui::End();
 }

@@ -11,7 +11,7 @@ PerspectiveCamera::PerspectiveCamera(
     float near,
     float far
 ) {
-    projection_ = glm::perspective(
+    projection = glm::perspective(
         glm::radians(fov),
         aspect,
         near,

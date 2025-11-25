@@ -7,6 +7,9 @@
 
 class PerspectiveCamera {
 public:
+    glm::mat4 transform {1.0f};
+    glm::mat4 projection {1.0f};
+
     PerspectiveCamera(
         float fov,
         float aspect,
@@ -14,10 +17,7 @@ public:
         float far
     );
 
-    [[nodiscard]] auto Projection() const -> const glm::mat4& {
-        return projection_;
+    [[nodiscard]] auto View() const -> glm::mat4 {
+        return glm::inverse(transform);
     }
-
-private:
-    glm::mat4 projection_ {1.0f};
 };

@@ -26,7 +26,7 @@ public:
 
     auto GetVisiblePages() -> std::vector<Page*>;
 
-    auto Debug(const OrthographicCamera& camera) const -> void;
+    auto Debug() const -> void;
 
 private:
     std::set<PageId> visible_pages_cache_;
