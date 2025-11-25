@@ -23,7 +23,12 @@ private:
 
     std::shared_ptr<EventListener> mouse_event_listener_;
 
-    bool do_orbit {false};
-    bool do_pan {false};
-    bool do_zoom {false};
+    glm::vec2 curr_pos_ {0.0f, 0.0f};
+    glm::vec2 prev_pos_ {0.0f, 0.0f};
+
+    float scroll_offset_ {0.0f};
+
+    bool do_orbit_ {false};
+    bool do_zoom_ {false};
+    bool is_first_move_ {true};
 };

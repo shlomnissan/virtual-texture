@@ -22,12 +22,29 @@ auto SphericalToVec3(float radius, float phi, float theta);
 }
 
 OrbitControls::OrbitControls(PerspectiveCamera* camera) : camera_(camera) {
-    using enum MouseEvent::Type;
-    using enum MouseButton;
-
     mouse_event_listener_ = std::make_shared<EventListener>([this](Event* event) {
-        // TODO: implement
+        auto e = event->As<MouseEvent>();
+        if (!e) return;
+
+        curr_pos_ = e->position;
+        if (is_first_move_) {
+            is_first_move_ = false;
+            prev_pos_ = curr_pos_;
+            return;
+        }
+
+        auto is_pressed = e->type == MouseEvent::Type::ButtonPressed;
+        if (e->button == MouseButton::Left) {
+            do_orbit_ = is_pressed;
+        }
+
+        if (e->type == MouseEvent::Type::Scrolled) {
+            scroll_offset_ = e->scroll.y;
+            do_zoom_ = scroll_offset_ != 0.0f;
+        }
     });
+
+    EventDispatcher::Get().AddEventListener("mouse_event", mouse_event_listener_);
 }
 
 auto OrbitControls::Update(float dt) -> void {
