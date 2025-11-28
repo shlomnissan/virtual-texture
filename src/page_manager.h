@@ -46,6 +46,8 @@ struct PageManager {
     std::vector<int> alloc_arr = std::vector<int>(pages_x * pages_y);
     std::vector<PendingUpload> upload_queue {};
 
+    std::mutex upload_mutex {};
+
     std::shared_ptr<ImageLoader> loader {ImageLoader::Create()};
 
     std::set<PageRequest> processing {};
@@ -95,6 +97,7 @@ struct PageManager {
     }
 
     auto FlushUploadQueue() -> void {
+        auto lock = std::lock_guard(upload_mutex);
         while (!upload_queue.empty()) {
             auto e = upload_queue.back();
             upload_queue.pop_back();
@@ -119,6 +122,7 @@ struct PageManager {
         auto path = std::format("assets/pages/{}_{}_{}.png", request.lod, request.x, request.y);
         loader->LoadAsync(path, [this, request, alloc_x, alloc_y](auto result) {
             if (result) {
+                auto lock = std::lock_guard(upload_mutex);
                 upload_queue.emplace_back(
                     request,
                     alloc_x,
