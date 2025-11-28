@@ -9,7 +9,8 @@ in vec2 v_TexCoord;
 uniform vec2 u_TextureSize;
 uniform vec2 u_PageSize;
 uniform float u_BufferScreenRatio;
-uniform int u_MaxMipLevel;
+uniform float u_MinMipLevel;
+uniform float u_MaxMipLevel;
 
 uint PackPageData(uint mip, uint pageX, uint pageY) {
     mip = mip & 0x1Fu;
@@ -24,7 +25,7 @@ void main() {
 
     float rho = max(length(texel_dx), length(texel_dy));
     float texel_footprint = max(rho * u_BufferScreenRatio, 1e-8); // avoid log2(0)
-    float mip_f = clamp(log2(texel_footprint), 0.0, float(u_MaxMipLevel));
+    float mip_f = clamp(log2(texel_footprint), u_MinMipLevel, u_MaxMipLevel);
     uint  mip_level = uint(mip_f);
 
     vec2 pages = u_TextureSize / u_PageSize;

@@ -26,6 +26,9 @@
 #include "feedback_buffer.h"
 
 constexpr auto window_size = glm::vec2(1024.0f, 1024.0f);
+constexpr auto texture_size = glm::vec2(8192.0f, 8192.0f);
+constexpr auto page_size = glm::vec2(1024.0f, 1024.0f);
+constexpr auto buffer_size = glm::ivec2(256, 256);
 
 auto main() -> int {
     std::shared_ptr<ImageLoader> loader_;
@@ -72,6 +75,17 @@ auto main() -> int {
     page_shader.SetUniform("u_NumPages", glm::ivec2 {4, 4});
     page_shader.SetUniform("u_PageScale", glm::vec2 {0.25f, 0.25f});
 
+    auto feedback_shader = Shaders {{
+        {ShaderType::kVertexShader, _SHADER_feedback_vert},
+        {ShaderType::kFragmentShader, _SHADER_feedback_frag}
+    }};
+
+    feedback_shader.SetUniform("u_TextureSize", texture_size);
+    feedback_shader.SetUniform("u_PageSize", page_size);
+    feedback_shader.SetUniform("u_BufferScreenRatio", 0.25f);
+    feedback_shader.SetUniform("u_MinMipLevel", 1.0f);
+    feedback_shader.SetUniform("u_MaxMipLevel", 1.0f);
+
     auto minimap_shader = Shaders {{
         {ShaderType::kVertexShader, _SHADER_minimap_vert},
         {ShaderType::kFragmentShader, _SHADER_minimap_frag}
@@ -80,12 +94,15 @@ auto main() -> int {
     minimap_shader.SetUniform("u_Texture0", 0);
 
     auto page_manager = PageManager {};
-    auto feedback_buffer = FeedbackBuffer {256, 256};
+    auto feedback_buffer = FeedbackBuffer {buffer_size.x, buffer_size.y};
 
     const auto feedbackPass = [&]() {
         feedback_buffer.Bind();
 
-        // TODO: implement feedback pass
+        feedback_shader.Use();
+        feedback_shader.SetUniform("u_Projection", camera_3d.projection);
+        feedback_shader.SetUniform("u_ModelView", camera_3d.transform);
+        geometry.Draw(feedback_shader);
 
         feedback_buffer.Unbind();
     };
@@ -95,7 +112,6 @@ auto main() -> int {
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        page_manager.Update();
         page_manager.atlas.Bind(0);
         page_manager.page_table.texture.Bind(1);
 
@@ -117,6 +133,11 @@ auto main() -> int {
     window.Start([&]([[maybe_unused]] const double dt){
         controls.Update(static_cast<float>(dt));
         feedbackPass();
+
+        page_manager.FlushUploadQueue();
+        page_manager.IngestFeedback(feedback_buffer.Data());
+        page_manager.page_table.Update();
+
         mainPass();
     });
 

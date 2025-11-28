@@ -6,7 +6,7 @@
 #include <array>
 #include <vector>
 
-constexpr std::array<GLuint, 4> clear_value {0xFFFFFFFFu, 0, 0, 0};
+constexpr std::array<GLuint, 4> clear {0xFFFFFFFFu, 0, 0, 0};
 
 struct FeedbackBuffer {
     Framebuffer framebuffer;
@@ -31,7 +31,7 @@ struct FeedbackBuffer {
     auto Bind() const -> void {
         framebuffer.Bind();
         glViewport(0, 0, framebuffer.Width(), framebuffer.Height());
-        glClearBufferuiv(GL_COLOR, 0, clear_value.data());
+        glClearBufferuiv(GL_COLOR, 0, clear.data());
     }
 
     auto Data() -> const std::vector<GLuint>& {

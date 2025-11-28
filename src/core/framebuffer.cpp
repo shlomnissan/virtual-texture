@@ -19,6 +19,7 @@ auto Framebuffer::AddColorAttachment(
         texture_id,
         0
     );
+    Unbind();
 }
 
 auto Framebuffer::Bind() const -> void {
