@@ -21,9 +21,18 @@ constexpr int page_w = 1024;
 constexpr int pages_x = 4;
 constexpr int pages_y = 4;
 
+struct PendingUpload {
+    int page_x;
+    int page_y;
+    int alloc_x;
+    int alloc_y;
+    std::shared_ptr<Image> image;
+};
+
 struct PageManager {
     PageTable page_table {pages_x, pages_y};
     Texture2D atlas {};
+    std::vector<PendingUpload> pending {};
 
     std::shared_ptr<ImageLoader> loader {ImageLoader::Create()};
 
@@ -55,21 +64,37 @@ struct PageManager {
         }
     }
 
-    auto RequestPage(int page_x, int page_y, int alloc_x, int alloc_y) -> void {
-        auto path = std::format("assets/pages/{}_{}_{}.png", 1, page_x, page_y);
-        loader->Load(path, [this, page_x, page_y, alloc_x, alloc_y](auto result) {
-            if (!result) return;
+    auto Update() {
+        while (!pending.empty()) {
+            auto e = pending.back();
+            pending.pop_back();
 
             atlas.Update(
-                page_w * alloc_x,
-                page_h * alloc_y,
+                page_w * e.alloc_x,
+                page_h * e.alloc_y,
                 page_w,
                 page_h,
-                result.value()->Data()
+                e.image->Data()
             );
 
-            auto entry = uint32_t {(alloc_x & 0xFFu) | ((alloc_y & 0xFFu) << 8)};
-            page_table.Write(page_x, page_y, entry);
+            auto entry = uint32_t {(e.alloc_x & 0xFFu) | ((e.alloc_y & 0xFFu) << 8)};
+            page_table.Write(e.page_x, e.page_y, entry);
+        }
+
+        page_table.Update();
+    }
+
+    auto RequestPage(int page_x, int page_y, int alloc_x, int alloc_y) -> void {
+        auto path = std::format("assets/pages/{}_{}_{}.png", 1, page_x, page_y);
+        loader->LoadAsync(path, [this, page_x, page_y, alloc_x, alloc_y](auto result) {
+            if (!result) return;
+            pending.emplace_back(
+                page_x,
+                page_y,
+                alloc_x,
+                alloc_y,
+                std::move(result.value())
+            );
         });
     }
 
