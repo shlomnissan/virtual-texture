@@ -28,7 +28,7 @@ public:
 
     auto Read(void* dst) const -> void;
 
-    auto Update(int offset_x, int offset_y, int width, int height, void* data) const -> void;
+    auto Update(int offset_x, int offset_y, int width, int height, void* data, unsigned mip = 0) const -> void;
 
     [[nodiscard]] auto Id() const { return texture_id_; }
 

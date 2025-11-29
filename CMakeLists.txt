@@ -65,7 +65,7 @@ add_executable(${EXECUTABLE}
     src/feedback_buffer.h
     src/page_allocator.h
     src/page_manager.h
-    src/page_table.h
+    src/page_tables.h
 )
 
 target_include_directories(${EXECUTABLE} PRIVATE

@@ -14,7 +14,7 @@
 #include "core/texture2d.h"
 #include "loaders/image_loader.h"
 
-#include "page_table.h"
+#include "page_tables.h"
 #include "page_allocator.h"
 
 constexpr auto atlas_size = glm::vec2(4096.0f, 4096.0f);
@@ -38,7 +38,7 @@ struct PendingUpload {
 struct PageManager {
     PageAllocator page_allocator {pages};
 
-    PageTable page_table {pages.x, pages.y};
+    PageTables page_table {glm::ivec2 {8192, 8192}, page_size};
 
     Texture2D atlas {};
 
@@ -80,7 +80,7 @@ struct PageManager {
 
         for (auto request : requests) {
             if (
-                !page_table.IsResident(request.x, request.y) &&
+                !page_table.IsResident(request.lod, request.x, request.y) &&
                 processing.find(request) == processing.end()
             ) {
                 processing.emplace(request);
@@ -107,7 +107,7 @@ struct PageManager {
                 0x1 | ((e.page_alloc.x & 0xFFu) << 1) | ((e.page_alloc.y & 0xFFu) << 9)
             };
 
-            page_table.Write(e.request.x, e.request.y, entry);
+            page_table.Write(e.request.lod, e.request.x, e.request.y, entry);
             processing.erase(e.request);
         }
     }

@@ -37,11 +37,13 @@ auto Texture2D::InitTexture(const Parameters& params) -> void {
     is_loaded_ = true;
 }
 
-auto Texture2D::Update(int offset_x, int offset_y, int width, int height, void* data) const -> void {
+auto Texture2D::Update(int offset_x, int offset_y, int width, int height, void* data, unsigned mip) const -> void {
     glBindTexture(GL_TEXTURE_2D, texture_id_);
     glTexSubImage2D(
         GL_TEXTURE_2D,
-        0, offset_x, offset_y,
+        mip,
+        offset_x,
+        offset_y,
         width,
         height,
         params_.format,

@@ -1,0 +1,81 @@
+// Copyright © 2025 - Present, Shlomi Nissan.
+// All rights reserved.
+
+#pragma once
+
+#include <cassert>
+#include <vector>
+
+#include <glad/glad.h>
+#include <glm/vec2.hpp>
+
+#include "core/texture2d.h"
+
+struct PageTables {
+    std::vector<std::vector<uint32_t>> tables {};
+
+    glm::ivec2 texture_size;
+    glm::ivec2 page_size;
+
+    Texture2D texture;
+
+    int lods {0};
+    int pages_x {0};
+    int pages_y {0};
+
+    PageTables(const glm::ivec2& texture_size, const glm::ivec2& page_size) :
+        texture_size(texture_size),
+        page_size(page_size)
+    {
+        assert(texture_size.x % page_size.x == 0);
+        assert(texture_size.y % page_size.y == 0);
+
+        pages_x = texture_size.x / page_size.x;
+        pages_y = texture_size.y / page_size.y;
+
+        lods = log2(std::max(pages_y, pages_x)) + 1;
+        tables.resize(lods);
+
+        for (auto i = 0, x = pages_x, y = pages_y; i < tables.size(); ++i) {
+            tables[i].resize(x * y);
+            x >>= 1;
+            y >>= 1;
+        }
+
+        texture.InitTexture({
+            .width = pages_x,
+            .height = pages_y,
+            .internal_format = GL_R32UI,
+            .format = GL_RED_INTEGER,
+            .type = GL_UNSIGNED_INT,
+            .min_filter = GL_NEAREST,
+            .gen_mipmaps = true,
+            .data = nullptr
+        });
+    }
+
+    auto IsResident(int lod, int page_x, int page_y) const {
+        const auto row_width = pages_x >> lod;
+        const auto idx = static_cast<size_t>(page_y) * row_width + page_x;
+        return static_cast<bool>(tables[lod][idx] & 1);
+    }
+
+    auto Write(int lod, int page_x, int page_y, uint32_t entry) {
+        const auto row_width = pages_x >> lod;
+        const auto idx = static_cast<size_t>(page_y) * row_width + page_x;
+        tables[lod][idx] = entry;
+    }
+
+    auto Update() {
+        for (auto i = 0; i < lods; ++i) {
+            texture.Update(
+                /* offset x = */ 0,
+                /* offset x = */ 0,
+                /* width = */ pages_x >> i,
+                /* height = */ pages_y >> i,
+                /* data = */ tables[i].data(),
+                /* mip level = */ i
+            );
+        }
+    }
+};

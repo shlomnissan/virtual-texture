@@ -17,7 +17,7 @@ void main() {
     page = clamp(page, ivec2(0), u_NumPages - 1);
     page.y = (u_NumPages.y - 1) - page.y;
 
-    uint entry = texelFetch(u_PageTable, page, 0).r;
+    uint entry = texelFetch(u_PageTable, page, 1).r;
     uint resident = entry & 0x1u;
 
     if (resident == 0u) {
