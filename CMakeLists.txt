@@ -63,6 +63,7 @@ add_executable(${EXECUTABLE}
     ${EXTERNAL_SOURCES}
     src/main.cpp
     src/feedback_buffer.h
+    src/page_allocator.h
     src/page_manager.h
     src/page_table.h
 )

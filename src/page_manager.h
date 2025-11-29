@@ -3,25 +3,23 @@
 
 #pragma once
 
-#include <algorithm>
 #include <format>
 #include <memory>
-#include <random>
-#include <vector>
-#include <set>
 #include <mutex>
+#include <set>
+#include <vector>
+
+#include <glm/vec2.hpp>
 
 #include "core/texture2d.h"
 #include "loaders/image_loader.h"
 
 #include "page_table.h"
+#include "page_allocator.h"
 
-constexpr int image_h = 4096;
-constexpr int image_w = 4096;
-constexpr int page_h = 1024;
-constexpr int page_w = 1024;
-constexpr int pages_x = 4;
-constexpr int pages_y = 4;
+constexpr auto atlas_size = glm::vec2(4096.0f, 4096.0f);
+constexpr auto page_size = glm::vec2(1024.0f, 1024.0f);
+constexpr auto pages = glm::ivec2(atlas_size / page_size);
 
 struct PageRequest {
     uint32_t lod;
@@ -33,17 +31,18 @@ struct PageRequest {
 
 struct PendingUpload {
     PageRequest request;
-    int alloc_x;
-    int alloc_y;
+    int loc_x;
+    int loc_y;
     std::shared_ptr<Image> image;
 };
 
 struct PageManager {
-    PageTable page_table {pages_x, pages_y};
+    PageAllocator page_allocator {pages};
+
+    PageTable page_table {pages.x, pages.y};
 
     Texture2D atlas {};
 
-    std::vector<int> alloc_arr = std::vector<int>(pages_x * pages_y);
     std::vector<PendingUpload> upload_queue {};
 
     std::mutex upload_mutex {};
@@ -55,16 +54,9 @@ struct PageManager {
     size_t alloc_idx = 0;
 
     PageManager() {
-        for (size_t i = 0u; i < alloc_arr.size(); ++i) {
-            alloc_arr[i] = static_cast<int>(i);
-        }
-
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::ranges::shuffle(alloc_arr, gen);
-
         atlas.InitTexture(
-            image_w, image_h,
+            atlas_size.x,
+            atlas_size.y,
             GL_RGBA, GL_RGBA,
             GL_UNSIGNED_BYTE,
             nullptr
@@ -91,7 +83,6 @@ struct PageManager {
             ) {
                 processing.emplace(request);
                 RequestPage(request);
-                alloc_idx += 1;
             }
         }
     }
@@ -103,30 +94,35 @@ struct PageManager {
             upload_queue.pop_back();
 
             atlas.Update(
-                page_w * e.alloc_x,
-                page_h * e.alloc_y,
-                page_w,
-                page_h,
+                page_size.x * e.loc_x,
+                page_size.y * e.loc_y,
+                page_size.x,
+                page_size.y,
                 e.image->Data()
             );
 
-            auto entry = uint32_t {0x1 | ((e.alloc_x & 0xFFu) << 1) | ((e.alloc_y & 0xFFu) << 9)};
+            auto entry = uint32_t {0x1 | ((e.loc_x & 0xFFu) << 1) | ((e.loc_y & 0xFFu) << 9)};
             page_table.Write(e.request.x, e.request.y, entry);
             processing.erase(e.request);
         }
     }
 
     auto RequestPage(const PageRequest& request) -> void {
-        auto alloc_x = alloc_arr[alloc_idx] % pages_x;
-        auto alloc_y = alloc_arr[alloc_idx] / pages_x;
+        auto alloc = page_allocator.Alloc();
+        if (!alloc) {
+            std::println(std::cerr, "{}", alloc.error());
+            return;
+        }
+
         auto path = std::format("assets/pages/{}_{}_{}.png", request.lod, request.x, request.y);
-        loader->LoadAsync(path, [this, request, alloc_x, alloc_y](auto result) {
+
+        loader->LoadAsync(path, [this, request, alloc](auto result) {
             if (result) {
                 auto lock = std::lock_guard(upload_mutex);
                 upload_queue.emplace_back(
                     request,
-                    alloc_x,
-                    alloc_y,
+                    alloc.value().x,
+                    alloc.value().y,
                     std::move(result.value())
                 );
             } else {
