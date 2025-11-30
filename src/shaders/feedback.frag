@@ -24,7 +24,7 @@ void main() {
     vec2 texel_dy = dFdy(v_TexCoord) * u_TextureSize;
 
     float rho = max(length(texel_dx), length(texel_dy));
-    float texel_footprint = max(rho * u_BufferScreenRatio, 1e-8); // avoid log2(0)
+    float texel_footprint = max(rho * u_BufferScreenRatio, 1e-8);
     float mip_f = clamp(log2(texel_footprint), u_MinMipLevel, u_MaxMipLevel);
     uint  mip_level = uint(mip_f);
 

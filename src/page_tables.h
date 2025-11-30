@@ -34,14 +34,18 @@ struct PageTables {
         pages_x = texture_size.x / page_size.x;
         pages_y = texture_size.y / page_size.y;
 
-        lods = std::log2(std::max(pages_y, pages_x)) + 1;
-        tables.resize(lods);
+        auto x = pages_x;
+        auto y = pages_y;
+        while (true) {
+            tables.emplace_back(x * y, 0u);
 
-        for (auto i = 0, x = pages_x, y = pages_y; i < tables.size(); ++i) {
-            tables[i].resize(x * y);
-            x >>= 1;
-            y >>= 1;
+            if (x == 1 && y == 1) break;
+
+            x = std::max(x >> 1, 1);
+            y = std::max(y >> 1, 1);
         }
+
+        lods = static_cast<int>(tables.size());
 
         texture.InitTexture({
             .width = pages_x,
