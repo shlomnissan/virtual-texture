@@ -74,7 +74,7 @@ auto main() -> int {
     page_shader.SetUniform("u_VirtualSize", virtual_size);
     page_shader.SetUniform("u_PageScale", page_size / atlas_size);
     page_shader.SetUniform("u_PageSize", page_size);
-    page_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {1.0f, 1.0f});
+    page_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {0.0f, 3.0f});
 
     auto feedback_shader = Shaders {{
         {ShaderType::kVertexShader, _SHADER_feedback_vert},
@@ -82,9 +82,9 @@ auto main() -> int {
     }};
 
     feedback_shader.SetUniform("u_VirtualSize", virtual_size);
-    feedback_shader.SetUniform("u_PageSize", page_size);
+    feedback_shader.SetUniform("u_PageGrid", virtual_size / page_size);
     feedback_shader.SetUniform("u_BufferScreenRatio", 0.25f);
-    feedback_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {1.0f, 1.0f});
+    feedback_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {0.0f, 3.0f});
 
     auto minimap_shader = Shaders {{
         {ShaderType::kVertexShader, _SHADER_minimap_vert},
