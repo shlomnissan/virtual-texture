@@ -11,45 +11,55 @@ in vec2 v_TexCoord;
 
 uniform vec2 u_VirtualSize;
 uniform vec2 u_PageScale;
-uniform vec2 u_PageSize;
+uniform vec2 u_PageGrid;
 uniform vec2 u_MinMaxMipLevel;
 
-float MipLevel() {
-    vec2 texel_dx = dFdx(v_TexCoord) * u_VirtualSize;
-    vec2 texel_dy = dFdy(v_TexCoord) * u_VirtualSize;
-    float rho = max(max(length(texel_dx), length(texel_dy)), 1e-8);
-    return clamp(log2(rho), u_MinMaxMipLevel.x, u_MinMaxMipLevel.y);
-}
+const uint PAGE_MASK  = 0xFFu;
 
-ivec2 PagesPerMip(uint mip_level) {
-    vec2 base_pages = u_VirtualSize / u_PageSize;
-    vec2 pages = max(base_pages / exp2(float(mip_level)), vec2(1.0));
-    return ivec2(pages);
+float ComputeMipLevel(in vec2 effective_size, in vec2 uv) {
+    vec2 dx = dFdx(uv) * effective_size;
+    vec2 dy = dFdy(uv) * effective_size;
+    float texel_footprint = max(dot(dx, dx), dot(dy, dy));
+    return 0.5 * log2(max(texel_footprint, 1e-8));
 }
 
 void main() {
-    int mip_level = int(MipLevel());
-    ivec2 pages_per_mip = PagesPerMip(mip_level);
+    float mip_float = clamp(
+        ComputeMipLevel(u_VirtualSize, v_TexCoord),
+        u_MinMaxMipLevel.x,
+        u_MinMaxMipLevel.y
+    );
 
-    ivec2 page = ivec2(v_TexCoord * vec2(pages_per_mip));
-    page = clamp(page, ivec2(0), pages_per_mip - 1);
-    page.y = (pages_per_mip.y - 1) - page.y;
+    int mip_level = int(mip_float);
 
-    uint entry = texelFetch(u_PageTable, page, mip_level).r;
+    float mip_scale = exp2(-float(mip_level));
+    vec2 curr_page_grid = max(u_PageGrid * mip_scale, vec2(1.0));
+
+    vec2 page_coords = floor(v_TexCoord * curr_page_grid);
+    page_coords = clamp(page_coords, vec2(0.0), curr_page_grid - 1.0);
+
+    // Flip Y to match coordinate systems:
+    // The page table is indexed starting from top-left (row 0)
+    page_coords.y = (curr_page_grid.y - 1) - page_coords.y;
+
+    uint entry = texelFetch(u_PageTable, ivec2(page_coords), mip_level).r;
     uint resident = entry & 0x1u;
 
     if (resident == 0u) {
-        FragColor = vec4(0.0);
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }
 
     ivec2 physical_page = ivec2(
-        (entry >>  1) & 0xFFu,
-        (entry >>  9) & 0xFFu
+        (entry >> 1) & PAGE_MASK,
+        (entry >> 9) & PAGE_MASK
     );
 
-    vec2 local_uv = fract(v_TexCoord * vec2(pages_per_mip));
+    vec2 local_uv = fract(v_TexCoord * curr_page_grid);
     vec2 atlas_uv = (vec2(physical_page) + local_uv) * u_PageScale;
 
-    FragColor = texture(u_TextureAtlas, atlas_uv);
+    vec2 dx = dFdx(v_TexCoord) * curr_page_grid * u_PageScale;
+    vec2 dy = dFdy(v_TexCoord) * curr_page_grid * u_PageScale;
+
+    FragColor = textureGrad(u_TextureAtlas, atlas_uv, dx, dy);
 }

@@ -12,12 +12,12 @@ uniform vec2 u_MinMaxMipLevel;
 uniform float u_BufferScreenRatio;
 
 const uint MIP_MASK  = 0x1Fu;
-const uint PAGE_MASK = 0x3Fu;
+const uint PAGE_MASK = 0xFFu;
 
 uint PackPageData(in uint mip, in uint page_x, in uint page_y) {
     return (mip & MIP_MASK) |
           ((page_x & PAGE_MASK) << 5) |
-          ((page_y & PAGE_MASK) << 11);
+          ((page_y & PAGE_MASK) << 13);
 }
 
 float ComputeMipLevel(in vec2 effective_size, in vec2 uv) {
@@ -38,6 +38,7 @@ void main() {
 
     float mip_scale = exp2(-float(mip_level));
     vec2 curr_page_grid = max(u_PageGrid * mip_scale, vec2(1.0));
+
     vec2 page_coords = floor(v_TexCoord * curr_page_grid);
     page_coords = clamp(page_coords, vec2(0.0), curr_page_grid - 1.0);
 

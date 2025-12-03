@@ -72,8 +72,8 @@ struct PageManager {
             if (packed != 0xFFFFFFFFu) {
                 requests.emplace(
                     packed & 0x1Fu,
-                    static_cast<int>((packed >> 5) & 0x3Fu),
-                    static_cast<int>((packed >> 11) & 0x3Fu)
+                    static_cast<int>((packed >> 5) & 0xFFu),
+                    static_cast<int>((packed >> 13) & 0xFFu)
                 );
             }
         }
