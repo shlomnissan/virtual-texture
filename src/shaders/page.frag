@@ -31,21 +31,31 @@ void main() {
     );
 
     int mip_level = int(mip_float);
+    int max_level = int(u_MinMaxMipLevel.y);
 
-    float mip_scale = exp2(-float(mip_level));
-    vec2 curr_page_grid = max(u_PageGrid * mip_scale, vec2(1.0));
+    vec2 curr_page_grid = vec2(0.0);
+    uint entry = 0u;
+    bool is_resident = false;
 
-    vec2 page_coords = floor(v_TexCoord * curr_page_grid);
-    page_coords = clamp(page_coords, vec2(0.0), curr_page_grid - 1.0);
+    for (; mip_level <= max_level; ++mip_level) {
+        float mip_scale = exp2(-float(mip_level));
+        curr_page_grid = max(u_PageGrid * mip_scale, vec2(1.0));
 
-    // Flip Y to match coordinate systems:
-    // The page table is indexed starting from top-left (row 0)
-    page_coords.y = (curr_page_grid.y - 1) - page_coords.y;
+        vec2 page_coords = floor(v_TexCoord * curr_page_grid);
+        page_coords = clamp(page_coords, vec2(0.0), curr_page_grid - 1.0);
 
-    uint entry = texelFetch(u_PageTable, ivec2(page_coords), mip_level).r;
-    uint resident = entry & 0x1u;
+        // Flip Y to match coordinate systems:
+        // The page table is indexed starting from top-left (row 0)
+        page_coords.y = (curr_page_grid.y - 1) - page_coords.y;
 
-    if (resident == 0u) {
+        entry = texelFetch(u_PageTable, ivec2(page_coords), mip_level).r;
+        if ((entry & 1u) != 0u) {
+            is_resident = true;
+            break; // Found a valid page
+        }
+    }
+
+    if (!is_resident) {
         FragColor = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }
