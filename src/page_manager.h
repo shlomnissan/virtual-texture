@@ -24,7 +24,7 @@ constexpr auto pages = glm::ivec2(atlas_size / page_size);
 
 struct PendingUpload {
     PageRequest request;
-    PageSlot page_alloc;
+    PageSlot page_slot;
     std::shared_ptr<Image> image;
 };
 
@@ -36,6 +36,7 @@ struct PageManager {
     Texture2D atlas {};
 
     std::vector<PendingUpload> upload_queue {};
+    std::vector<PendingUpload> failure_queue {};
 
     std::mutex upload_mutex {};
 
@@ -72,6 +73,8 @@ struct PageManager {
         }
 
         for (auto request : requests) {
+            page_cache.Touch(request);
+
             if (
                 !page_table.IsResident(request.lod, request.x, request.y) &&
                 processing.find(request) == processing.end()
@@ -83,32 +86,44 @@ struct PageManager {
     }
 
     auto FlushUploadQueue() -> void {
-        auto lock = std::lock_guard(upload_mutex);
-        while (!upload_queue.empty()) {
-            auto e = upload_queue.back();
-            upload_queue.pop_back();
+        std::vector<PendingUpload> uploads;
+        std::vector<PendingUpload> failures;
 
+        {
+            auto lock = std::lock_guard(upload_mutex);
+            uploads.swap(upload_queue);
+            failures.swap(failure_queue);
+        }
+
+        for (const auto& f : failures) {
+            page_cache.Cancel(f.page_slot);
+            processing.erase(f.request);
+        }
+
+        for (const auto& u : uploads) {
             atlas.Update(
-                page_size.x * e.page_alloc.x,
-                page_size.y * e.page_alloc.y,
+                page_size.x * u.page_slot.x,
+                page_size.y * u.page_slot.y,
                 page_size.x,
                 page_size.y,
-                e.image->Data()
+                u.image->Data()
             );
 
             auto entry = uint32_t {
-                0x1 | ((e.page_alloc.x & 0xFFu) << 1) | ((e.page_alloc.y & 0xFFu) << 9)
+                0x1 | ((u.page_slot.x & 0xFFu) << 1) | ((u.page_slot.y & 0xFFu) << 9)
             };
 
-            page_table.Write(e.request.lod, e.request.x, e.request.y, entry);
-            processing.erase(e.request);
+            page_table.Write(u.request.lod, u.request.x, u.request.y, entry);
+            page_cache.Commit(u.request, u.page_slot);
+            processing.erase(u.request);
         }
     }
 
     auto RequestPage(const PageRequest& request) -> void {
-        auto alloc_result = page_cache.Alloc(request);
+        auto alloc_result = page_cache.Acquire(request);
         if (!alloc_result.slot) {
-            std::println(std::cerr, "Out of memory");
+            std::println(std::cerr, "Unable to allocate physical page");
+            processing.erase(request);
             return;
         }
 
@@ -116,8 +131,8 @@ struct PageManager {
         auto path = std::format("assets/pages/{}_{}_{}.png", request.lod, request.x, request.y);
 
         loader->LoadAsync(path, [this, request, slot](auto loader_result) {
+            auto lock = std::lock_guard(upload_mutex);
             if (loader_result) {
-                auto lock = std::lock_guard(upload_mutex);
                 upload_queue.emplace_back(
                     request,
                     slot,
@@ -125,6 +140,11 @@ struct PageManager {
                 );
             } else {
                 std::println("{}", loader_result.error());
+                failure_queue.emplace_back(
+                    request,
+                    slot,
+                    nullptr
+                );
             }
 
         });

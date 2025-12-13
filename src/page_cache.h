@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <list>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -25,7 +26,19 @@ public:
         }
     }
 
-    auto Alloc(const PageRequest& request) -> ResidencyDecision {
+    auto Commit(const PageRequest& request, const PageSlot& slot) {
+        req_to_slot[request] = slot;
+        lru_list_.emplace_front(request);
+        lru_map_[request] = lru_list_.begin();
+    }
+
+    auto Touch(const PageRequest& request) {
+        if (auto it = lru_map_.find(request); it != lru_map_.end()) {
+            lru_list_.splice(lru_list_.begin(), lru_list_, it->second);
+        }
+    }
+
+    auto Acquire(const PageRequest& request) -> ResidencyDecision {
         if (free_slots_.empty()) {
             return ResidencyDecision {std::nullopt, std::nullopt};
         }
@@ -36,8 +49,15 @@ public:
         return ResidencyDecision {slot, std::nullopt};
     }
 
+    auto Cancel(const PageSlot& slot) -> void {
+        free_slots_.emplace_back(slot);
+    }
+
 private:
     size_t capacity_ {0};
 
     std::vector<PageSlot> free_slots_ {};
+    std::list<PageRequest> lru_list_ {};
+    std::unordered_map<PageRequest, std::list<PageRequest>::iterator> lru_map_ {};
+    std::unordered_map<PageRequest, PageSlot> req_to_slot {};
 };
