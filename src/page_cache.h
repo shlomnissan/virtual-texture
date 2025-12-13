@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <list>
 #include <optional>
 #include <unordered_map>
@@ -27,8 +28,9 @@ public:
     }
 
     auto Commit(const PageRequest& request, const PageSlot& slot) {
-        if (req_to_slot_.contains(request)) {
-            // add assert, this shouldn't happen
+        auto already_resident = req_to_slot_.contains(request);
+        if (already_resident) {
+            assert(!already_resident);
             return;
         }
 
@@ -44,25 +46,23 @@ public:
     }
 
     auto Acquire(const PageRequest& request) -> ResidencyDecision {
-        // if already resident (req_to_slot)
-            // return the slot
+        if (auto it = req_to_slot_.find(request); it != req_to_slot_.end()) {
+            return ResidencyDecision {it->second, std::nullopt};
+        }
 
-        // add assert no way for lru and free slots to be empty
+        assert(free_slots_.size() > 0 || lru_list_.size() > 0);
 
         if (free_slots_.empty()) {
-            // get request from back of lru_list_
-            // get slot from req_to_slot
-            // if we have both
-                // pop back lru_list_
-                // erase value from lru_map_
-                // erase value from req_to_slot
-            // return residency decision
-                // slot: slot
-                // evicted: request
-            // note: the page manager is responsible for updating the page
-            //   table when it flushes the upload queue. if evicted exists
-            //   the page manager can clear the table from RequestPage
-            return ResidencyDecision {std::nullopt, std::nullopt};
+            auto request = lru_list_.back();
+
+            assert(req_to_slot_.contains(request));
+            auto slot = req_to_slot_[request];
+
+            lru_list_.pop_back();
+            lru_map_.erase(request);
+            req_to_slot_.erase(request);
+
+            return {.slot = slot, .evicted = request};
         }
 
         auto slot = free_slots_.back();

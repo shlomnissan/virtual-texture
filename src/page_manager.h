@@ -113,7 +113,7 @@ struct PageManager {
                 0x1 | ((u.page_slot.x & 0xFFu) << 1) | ((u.page_slot.y & 0xFFu) << 9)
             };
 
-            page_table.Write(u.request.lod, u.request.x, u.request.y, entry);
+            page_table.Write(u.request, entry);
             page_cache.Commit(u.request, u.page_slot);
             processing.erase(u.request);
         }
@@ -125,6 +125,10 @@ struct PageManager {
             std::println(std::cerr, "Unable to allocate physical page");
             processing.erase(request);
             return;
+        }
+
+        if (alloc_result.evicted) {
+            page_table.Write(alloc_result.evicted.value(), 0u);
         }
 
         auto slot = alloc_result.slot.value();

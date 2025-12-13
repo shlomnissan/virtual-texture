@@ -11,6 +11,7 @@
 #include <glm/vec2.hpp>
 
 #include "core/texture2d.h"
+#include "types.h"
 
 struct PageTables {
     std::vector<std::vector<uint32_t>> tables {};
@@ -65,10 +66,10 @@ struct PageTables {
         return static_cast<bool>(tables[lod][idx] & 1);
     }
 
-    auto Write(int lod, int page_x, int page_y, uint32_t entry) {
-        const auto row_width = pages_x >> lod;
-        const auto idx = static_cast<size_t>(page_y) * row_width + page_x;
-        tables[lod][idx] = entry;
+    auto Write(const PageRequest& request, uint32_t entry) {
+        const auto row_width = pages_x >> request.lod;
+        const auto idx = static_cast<size_t>(request.y) * row_width + request.x;
+        tables[request.lod][idx] = entry;
     }
 
     auto Update() {
