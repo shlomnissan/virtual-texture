@@ -28,6 +28,11 @@ struct PendingUpload {
     std::shared_ptr<Image> image;
 };
 
+struct PendingFailure {
+    PageRequest request;
+    PageSlot page_slot;
+};
+
 struct PageManager {
     PageCache page_cache {pages.x, pages.y};
 
@@ -36,7 +41,7 @@ struct PageManager {
     Texture2D atlas {};
 
     std::vector<PendingUpload> upload_queue {};
-    std::vector<PendingUpload> failure_queue {};
+    std::vector<PendingFailure> failure_queue {};
 
     std::mutex upload_mutex {};
 
@@ -87,7 +92,7 @@ struct PageManager {
 
     auto FlushUploadQueue() -> void {
         std::vector<PendingUpload> uploads;
-        std::vector<PendingUpload> failures;
+        std::vector<PendingFailure> failures;
 
         {
             auto lock = std::lock_guard(upload_mutex);
@@ -144,11 +149,7 @@ struct PageManager {
                 );
             } else {
                 std::println("{}", loader_result.error());
-                failure_queue.emplace_back(
-                    request,
-                    slot,
-                    nullptr
-                );
+                failure_queue.emplace_back(request, slot);
             }
 
         });

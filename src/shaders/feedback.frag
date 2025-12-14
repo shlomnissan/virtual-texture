@@ -40,6 +40,7 @@ void main() {
     vec2 curr_page_grid = max(u_PageGrid * mip_scale, vec2(1.0));
 
     vec2 page_coords = floor(v_TexCoord * curr_page_grid);
+    page_coords.y = (curr_page_grid.y - 1) - page_coords.y;
     page_coords = clamp(page_coords, vec2(0.0), curr_page_grid - 1.0);
 
     uint data = PackPageData(mip_level, uint(page_coords.x), uint(page_coords.y));
