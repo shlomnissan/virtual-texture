@@ -29,7 +29,7 @@
 constexpr auto window_size = glm::vec2(1024.0f, 1024.0f);
 constexpr auto virtual_size = glm::vec2(8192.0f, 8192.0f);
 constexpr auto buffer_size = glm::ivec2(256, 256);
-constexpr auto lods = 4u;
+constexpr auto lods = 5u;
 
 auto main() -> int {
     std::shared_ptr<ImageLoader> loader_;

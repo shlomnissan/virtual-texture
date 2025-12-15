@@ -19,9 +19,9 @@
 #include "types.h"
 
 constexpr auto atlas_size = glm::vec2(4096.0f, 4096.0f);
-constexpr auto page_size = glm::vec2(1024.0f, 1024.0f);
+constexpr auto page_size = glm::vec2(512.0f, 512.0f);
 constexpr auto pages = glm::ivec2(atlas_size / page_size);
-constexpr auto min_pinned_lod_idx = 2u;
+constexpr auto min_pinned_lod_idx = 3u;
 
 struct PendingUpload {
     PageRequest request;
