@@ -18,9 +18,11 @@
 #include "page_cache.h"
 #include "types.h"
 
-constexpr auto atlas_size = glm::vec2(4096.0f, 4096.0f);
+constexpr auto pages = glm::ivec2(8, 8);
 constexpr auto page_size = glm::vec2(512.0f, 512.0f);
-constexpr auto pages = glm::ivec2(atlas_size / page_size);
+constexpr auto padding = glm::vec2(2.0f, 2.0f);
+constexpr auto physical_page_size = page_size + (2.0f * padding);
+constexpr auto atlas_size = physical_page_size * glm::vec2(pages);
 constexpr auto min_pinned_lod_idx = 3u;
 
 struct PendingUpload {
@@ -118,10 +120,10 @@ struct PageManager {
 
         for (const auto& u : uploads) {
             atlas.Update(
-                page_size.x * u.page_slot.x,
-                page_size.y * u.page_slot.y,
-                page_size.x,
-                page_size.y,
+                physical_page_size.x * u.page_slot.x,
+                physical_page_size.y * u.page_slot.y,
+                physical_page_size.x,
+                physical_page_size.y,
                 u.image->Data()
             );
 
