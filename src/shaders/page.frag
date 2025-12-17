@@ -11,8 +11,11 @@ in vec2 v_TexCoord;
 
 uniform vec2 u_VirtualSize;
 uniform vec2 u_PageGrid;
-uniform vec2 u_PageScale;
 uniform vec2 u_MinMaxMipLevel;
+
+uniform vec2 u_AtlasSize;
+uniform vec2 u_PageSize;
+uniform vec2 u_PagePadding;
 
 const uint PAGE_MASK  = 0xFFu;
 
@@ -66,10 +69,14 @@ void main() {
     );
 
     vec2 local_uv = fract(v_TexCoord * curr_page_grid);
-    vec2 atlas_uv = (vec2(physical_page) + local_uv) * u_PageScale;
 
-    vec2 dx = dFdx(v_TexCoord) * curr_page_grid * u_PageScale;
-    vec2 dy = dFdy(v_TexCoord) * curr_page_grid * u_PageScale;
+    vec2 page_origin = vec2(physical_page) * (u_PageSize + u_PagePadding);;
+    vec2 half_padding = u_PagePadding * 0.5;
+    vec2 sample_texel = page_origin + half_padding + local_uv * u_PageSize;
+    vec2 atlas_uv = sample_texel / u_AtlasSize;
+
+    vec2 dx = dFdx(v_TexCoord) * curr_page_grid * (u_PageSize / u_AtlasSize);
+    vec2 dy = dFdy(v_TexCoord) * curr_page_grid * (u_PageSize / u_AtlasSize);
 
     FragColor = textureGrad(u_TextureAtlas, atlas_uv, dx, dy);
 }

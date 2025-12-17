@@ -71,15 +71,14 @@ auto main() -> int {
         {ShaderType::kFragmentShader, _SHADER_page_frag}
     }};
 
-    auto x = physical_page_size / atlas_size;
-
-
     page_shader.Use();
     page_shader.SetUniform("u_TextureAtlas", 0);
     page_shader.SetUniform("u_PageTable", 1);
     page_shader.SetUniform("u_VirtualSize", virtual_size);
     page_shader.SetUniform("u_PageGrid", virtual_size / page_size);
-    page_shader.SetUniform("u_PageScale", physical_page_size / atlas_size);
+    page_shader.SetUniform("u_AtlasSize", atlas_size);
+    page_shader.SetUniform("u_PageSize", page_size);
+    page_shader.SetUniform("u_PagePadding", padding);
     page_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {0.0f, static_cast<float>(lods - 1)});
 
     auto feedback_shader = Shaders {{
