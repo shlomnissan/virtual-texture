@@ -12,7 +12,6 @@ in vec2 v_TexCoord;
 uniform vec2 u_VirtualSize;
 uniform vec2 u_PageGrid;
 uniform vec2 u_PageScale;
-uniform vec2 u_PagePadding;
 uniform vec2 u_MinMaxMipLevel;
 
 const uint PAGE_MASK  = 0xFFu;

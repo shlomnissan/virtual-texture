@@ -80,7 +80,6 @@ auto main() -> int {
     page_shader.SetUniform("u_VirtualSize", virtual_size);
     page_shader.SetUniform("u_PageGrid", virtual_size / page_size);
     page_shader.SetUniform("u_PageScale", physical_page_size / atlas_size);
-    // page_shader.SetUniform("u_PagePadding", padding);
     page_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {0.0f, static_cast<float>(lods - 1)});
 
     auto feedback_shader = Shaders {{

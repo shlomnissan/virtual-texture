@@ -20,8 +20,8 @@
 
 constexpr auto pages = glm::ivec2(8, 8);
 constexpr auto page_size = glm::vec2(512.0f, 512.0f);
-constexpr auto padding = glm::vec2(2.0f, 2.0f);
-constexpr auto physical_page_size = page_size + (2.0f * padding);
+constexpr auto padding = glm::vec2(4.0f, 4.0f);
+constexpr auto physical_page_size = page_size + padding;
 constexpr auto atlas_size = physical_page_size * glm::vec2(pages);
 constexpr auto min_pinned_lod_idx = 3u;
 
