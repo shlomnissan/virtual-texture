@@ -3,6 +3,8 @@
 
 #include "page_tables.h"
 
+#include <glad/glad.h>
+
 PageTables::PageTables(const glm::ivec2& pages) : pages_(pages) {
     auto x = pages_.x;
     auto y = pages_.y;

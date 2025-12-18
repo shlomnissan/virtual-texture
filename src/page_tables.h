@@ -5,7 +5,6 @@
 
 #include <vector>
 
-#include <glad/glad.h>
 #include <glm/vec2.hpp>
 
 #include "core/texture2d.h"

@@ -37,7 +37,7 @@ struct PendingFailure {
 };
 
 struct PageManager {
-    PageCache page_cache {pages.x, pages.y, min_pinned_lod_idx};
+    PageCache page_cache {pages, min_pinned_lod_idx};
 
     PageTables page_table;
 
