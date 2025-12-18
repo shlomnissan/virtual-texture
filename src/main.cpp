@@ -29,7 +29,6 @@
 constexpr auto window_size = glm::vec2(1024.0f, 1024.0f);
 constexpr auto virtual_size = glm::vec2(8192.0f, 8192.0f);
 constexpr auto buffer_size = glm::ivec2(256, 256);
-constexpr auto lods = 5u;
 
 auto main() -> int {
     std::shared_ptr<ImageLoader> loader_;
@@ -71,6 +70,10 @@ auto main() -> int {
         {ShaderType::kFragmentShader, _SHADER_page_frag}
     }};
 
+    auto page_manager = PageManager {virtual_size};
+    auto feedback_buffer = FeedbackBuffer {buffer_size};
+    auto mip_range = glm::vec2 {0.0f, static_cast<float>(page_manager.LODs() - 1)};
+
     page_shader.Use();
     page_shader.SetUniform("u_TextureAtlas", 0);
     page_shader.SetUniform("u_PageTable", 1);
@@ -79,7 +82,7 @@ auto main() -> int {
     page_shader.SetUniform("u_AtlasSize", atlas_size);
     page_shader.SetUniform("u_PageSize", slot_size);
     page_shader.SetUniform("u_PagePadding", padding);
-    page_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {0.0f, static_cast<float>(lods - 1)});
+    page_shader.SetUniform("u_MinMaxMipLevel", mip_range);
 
     auto feedback_shader = Shaders {{
         {ShaderType::kVertexShader, _SHADER_feedback_vert},
@@ -90,7 +93,7 @@ auto main() -> int {
     feedback_shader.SetUniform("u_VirtualSize", virtual_size);
     feedback_shader.SetUniform("u_PageGrid", virtual_size / slot_size);
     feedback_shader.SetUniform("u_BufferScreenRatio", 0.25f);
-    feedback_shader.SetUniform("u_MinMaxMipLevel", glm::vec2 {0.0f, static_cast<float>(lods - 1)});
+    feedback_shader.SetUniform("u_MinMaxMipLevel", mip_range);
 
     auto minimap_shader = Shaders {{
         {ShaderType::kVertexShader, _SHADER_minimap_vert},
@@ -98,9 +101,6 @@ auto main() -> int {
     }};
 
     minimap_shader.SetUniform("u_Texture0", 0);
-
-    auto page_manager = PageManager {virtual_size, lods};
-    auto feedback_buffer = FeedbackBuffer {buffer_size};
 
     const auto feedbackPass = [&]() {
         feedback_buffer.Bind();
@@ -119,7 +119,7 @@ auto main() -> int {
         glClear(GL_COLOR_BUFFER_BIT);
 
         page_manager.atlas.Bind(0);
-        page_manager.page_table.Texture().Bind(1);
+        page_manager.page_tables.Texture().Bind(1);
 
         page_shader.Use();
         page_shader.SetUniform("u_Projection", camera_3d.projection);
@@ -142,7 +142,7 @@ auto main() -> int {
 
         page_manager.FlushUploadQueue();
         page_manager.IngestFeedback(feedback_buffer.Data());
-        page_manager.page_table.Update();
+        page_manager.page_tables.Update();
 
         mainPass();
     });

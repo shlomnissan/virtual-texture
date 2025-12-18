@@ -41,7 +41,7 @@ struct PendingFailure {
 struct PageManager {
     PageCache page_cache {slots, min_pinned_lod_idx};
 
-    PageTables page_table;
+    PageTables page_tables;
 
     Texture2D atlas {};
 
@@ -56,7 +56,7 @@ struct PageManager {
 
     size_t alloc_idx = 0;
 
-    PageManager(const glm::vec2& virtual_size, unsigned int lods) : page_table(virtual_size / slot_size) {
+    PageManager(const glm::vec2& virtual_size) : page_tables(virtual_size / slot_size) {
         atlas.InitTexture({
             .width = static_cast<int>(atlas_size.x),
             .height = static_cast<int>(atlas_size.y),
@@ -69,7 +69,7 @@ struct PageManager {
         });
 
         // preload pinned pages
-        for (auto lod = min_pinned_lod_idx; lod < lods; ++lod) {
+        for (auto lod = min_pinned_lod_idx; lod < LODs(); ++lod) {
             auto rows = std::max(static_cast<int>(virtual_size.y / slot_size.y) >> lod, 1);
             auto cols = std::max(static_cast<int>(virtual_size.x / slot_size.x) >> lod, 1);
             for (auto row = 0; row < rows; row++) {
@@ -97,13 +97,15 @@ struct PageManager {
             page_cache.Touch(request);
 
             if (
-                !page_table.IsResident(request.lod, request.x, request.y) &&
+                !page_tables.IsResident(request.lod, request.x, request.y) &&
                 processing.find(request) == processing.end()
             ) {
                 RequestPage(request);
             }
         }
     }
+
+    auto LODs() const -> int { return page_tables.LODs(); }
 
     auto FlushUploadQueue() -> void {
         std::vector<PendingUpload> uploads;
@@ -133,7 +135,7 @@ struct PageManager {
                 0x1 | ((u.page_slot.x & 0xFFu) << 1) | ((u.page_slot.y & 0xFFu) << 9)
             };
 
-            page_table.Write(u.request, entry);
+            page_tables.Write(u.request, entry);
             page_cache.Commit(u.request, u.page_slot);
             processing.erase(u.request);
         }
@@ -148,7 +150,7 @@ struct PageManager {
         }
 
         if (alloc_result.evicted) {
-            page_table.Write(alloc_result.evicted.value(), 0u);
+            page_tables.Write(alloc_result.evicted.value(), 0u);
         }
 
         auto slot = alloc_result.slot.value();

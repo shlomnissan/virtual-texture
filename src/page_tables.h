@@ -19,6 +19,8 @@ public:
 
     auto Update() -> void;
 
+    [[nodiscard]] auto LODs() const -> int { return lods_; }
+
     [[nodiscard]] auto Texture() -> Texture2D& { return texture_; }
 
     [[nodiscard]] auto IsResident(int lod, int page_x, int page_y) const -> bool;
