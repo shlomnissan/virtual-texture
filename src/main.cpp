@@ -16,12 +16,14 @@
 #include "core/texture2d.h"
 #include "core/window.h"
 
-#include "shaders/headers/feedback_vert.h"
 #include "shaders/headers/feedback_frag.h"
-#include "shaders/headers/page_vert.h"
-#include "shaders/headers/page_frag.h"
-#include "shaders/headers/minimap_vert.h"
+#include "shaders/headers/feedback_vert.h"
+#include "shaders/headers/flat_frag.h"
+#include "shaders/headers/flat_vert.h"
 #include "shaders/headers/minimap_frag.h"
+#include "shaders/headers/minimap_vert.h"
+#include "shaders/headers/page_frag.h"
+#include "shaders/headers/page_vert.h"
 
 #include "page_manager.h"
 #include "feedback_buffer.h"
@@ -59,7 +61,7 @@ auto main() -> int {
     };
 
     auto controls = OrbitControls {&camera_3d};
-    controls.radius = 2.0f;
+    controls.radius = 10.0f;
 
     const auto geometry = PlaneGeometry {{
         .width = 1.0f,
@@ -98,6 +100,11 @@ auto main() -> int {
     feedback_shader.SetUniform("u_BufferScreenRatio", 0.25f);
     feedback_shader.SetUniform("u_MinMaxMipLevel", mip_range);
 
+    auto flat_shader = Shaders {{
+        {ShaderType::kVertexShader, _SHADER_flat_vert},
+        {ShaderType::kFragmentShader, _SHADER_flat_frag}
+    }};
+
     auto minimap_shader = Shaders {{
         {ShaderType::kVertexShader, _SHADER_minimap_vert},
         {ShaderType::kFragmentShader, _SHADER_minimap_frag}
@@ -105,12 +112,15 @@ auto main() -> int {
 
     minimap_shader.SetUniform("u_Texture0", 0);
 
+    auto mesh_transform = glm::mat4 {1.0f};
+    mesh_transform = glm::scale(mesh_transform, glm::vec3(5.0f, 5.0f, 1.0f));
+
     const auto feedbackPass = [&]() {
         feedback_buffer.Bind();
 
         feedback_shader.Use();
         feedback_shader.SetUniform("u_Projection", camera_3d.projection);
-        feedback_shader.SetUniform("u_ModelView", camera_3d.transform);
+        feedback_shader.SetUniform("u_ModelView", camera_3d.transform * mesh_transform);
         geometry.Draw(feedback_shader);
 
         feedback_buffer.Unbind();
@@ -126,16 +136,27 @@ auto main() -> int {
 
         page_shader.Use();
         page_shader.SetUniform("u_Projection", camera_3d.projection);
-        page_shader.SetUniform("u_ModelView", camera_3d.transform);
+        page_shader.SetUniform("u_ModelView", camera_3d.transform * mesh_transform);
         geometry.Draw(page_shader);
+    };
 
-        auto minimap_model = glm::mat4 {1.0f};
-        minimap_model = glm::translate(minimap_model, glm::vec3(120.0f, 1024.0f - 120.0f, 0.0f));
-        minimap_model = glm::scale(minimap_model, glm::vec3(200.0f, 200.0f, 1.0f));
+    const auto minimapPass = [&]() {
+        auto border_transform = glm::mat4 {1.0f};
+        border_transform = glm::translate(border_transform, glm::vec3(84.0f, 1024.0f - 84.0f, 0.0f));
+        border_transform = glm::scale(border_transform, glm::vec3(132.0f, 132.0f, 1.0f));
+
+        flat_shader.Use();
+        flat_shader.SetUniform("u_Projection", camera_2d.projection);
+        flat_shader.SetUniform("u_ModelView", camera_2d.View() * border_transform);
+        geometry.Draw(flat_shader);
+
+        auto minimap_transform = glm::mat4 {1.0f};
+        minimap_transform = glm::translate(minimap_transform, glm::vec3(84.0f, 1024.0f - 84.0f, 0.0f));
+        minimap_transform = glm::scale(minimap_transform, glm::vec3(128.0f, 128.0f, 1.0f));
 
         minimap_shader.Use();
         minimap_shader.SetUniform("u_Projection", camera_2d.projection);
-        minimap_shader.SetUniform("u_ModelView", camera_2d.View() * minimap_model);
+        minimap_shader.SetUniform("u_ModelView", camera_2d.View() * minimap_transform);
         geometry.Draw(minimap_shader);
     };
 
@@ -148,6 +169,7 @@ auto main() -> int {
         page_manager.UpdatePageTables();
 
         mainPass();
+        minimapPass();
     });
 
     return 0;

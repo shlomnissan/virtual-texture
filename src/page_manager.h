@@ -22,7 +22,7 @@
 namespace {
 
 constexpr auto slots_in_cache = glm::ivec2(8, 8);
-constexpr auto min_pinned_lod_idx = 3u;
+constexpr auto min_pinned_lod_idx = 4u;
 
 }
 

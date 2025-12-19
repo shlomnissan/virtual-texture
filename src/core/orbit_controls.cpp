@@ -17,6 +17,7 @@ constexpr float pi_times_2 {static_cast<float>(std::numbers::pi * 2)};
 constexpr float orbit_speed {0.01f};
 constexpr float pan_speed {0.001f};
 constexpr float zoom_speed {0.1f};
+constexpr float radius_limit {0.8f};
 constexpr float pitch_limit = pi_over_2 - 0.001f;
 
 auto SphericalToVec3(float radius, float phi, float theta) -> glm::vec3;
@@ -73,7 +74,7 @@ auto OrbitControls::Update(float dt) -> void {
     if (camera_ == nullptr) return;
 
     theta = std::clamp(theta, -pitch_limit, pitch_limit);
-    radius = std::max(0.11f, radius);
+    radius = std::max(radius_limit, radius);
 
     camera_->transform = glm::lookAt(
         target + SphericalToVec3(radius, phi, theta),
