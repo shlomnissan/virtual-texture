@@ -63,7 +63,6 @@ Window::Window(int width, int height, std::string_view title) {
         return;
     }
 
-    glfwSwapInterval(0); // disable vsync
     glfwSetWindowUserPointer(window_, this);
     glfwSetCursorPosCallback(window_, glfwCursorPosCallback);
     glfwSetMouseButtonCallback(window_, glfwMouseButtonCallback);
