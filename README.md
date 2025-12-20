@@ -12,9 +12,8 @@ Virtual texturing is usually explained at a high level and implemented behind la
 
 - Virtual texture sampling via page table indirection
 - Physical texture atlas with page residency
-- GPU feedback pass to detect page usage
+- GPU feedback pass to detect page usage and mip selection
 - CPU-side page cache and simple eviction
-- Derivative-based mip selection
 - Page padding for bilinear filtering
 
 ### Project overview
@@ -25,7 +24,7 @@ Texture tiles are generated offline using [vtile](https://github.com/shlomnissan
 
 The example UV grid texture used in the demo is by Maurus Löffel. You can download the [source image here](https://drive.google.com/drive/folders/1K_G_hbFyohR8-xCCAlYx8xhsd_a7Ir7G).
 
-![Virtual texturing demo](https://github.com/user-attachments/assets/aac35b1d-168d-4f51-92fe-39173d68d557)
+![Virtual texturing demo](https://github.com/user-attachments/assets/8082b086-7b35-4ae5-b33c-01bf09b62796)
 
 ## Building the project
 
